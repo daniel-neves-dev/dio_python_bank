@@ -3,9 +3,9 @@ WITH_DRAW_MONEY = 2
 ACCOUNT_STATEMENT = 3
 EXIT_APP = 4
 
-balance = 0
-limit = 500
-account_statement = ""
+balance = 0.0
+limit = 500.0
+account_statement = " "
 TRANSITION_LIMITS = 3
 
 
@@ -21,9 +21,12 @@ def options():
 
 def add_to_account():
     global balance
-    value = float(input("Type the value to add in the account: "))
+    global account_statement
+
+    value = float(input("Type the value to add in the account: $"))
     if value >= 0:
         balance += value
+        print(f"Value: ${value:.2f} succefully added.")  
     else:
         print('The value must be at least 1 dolar')
 
@@ -32,7 +35,11 @@ def with_draw_money():
     return print('Cash Out')
 
 def account_statement():
-    print('Account Statement')
+    global balance
+    print()
+    print("=====Account Statement=====")
+    print(f"Total value: {balance}")
+    print("===========================")
 
 def exit():
     return print('Thanks for using our system!!!')
