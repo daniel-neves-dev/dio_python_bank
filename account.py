@@ -1,63 +1,104 @@
 ADD_TO_ACCOUNT = 1
-WITH_DRAW_MONEY = 2
+WITHDRAWN_MONEY = 2
 ACCOUNT_STATEMENT = 3
 EXIT_APP = 4
 
 balance = 0.0
 limit = 500.0
-account_statement = " "
-TRANSITION_LIMITS = 3
+WITHDRAW_LIMITS = 3
 
 
 def options():
     print()
-    print("=====Banck System=====")
+    print("=====Bank System=====\n")
     print(f"{[ADD_TO_ACCOUNT]} Make a deposit")
-    print(f"{[WITH_DRAW_MONEY]} Cash out")
+    print(f"{[WITHDRAWN_MONEY]} Cash out")
     print(f"{[ACCOUNT_STATEMENT]} Account Statement")
     print(f"{[EXIT_APP]} Exit")
-    return int(input('Choose a option: '))
+    return int(input('\nChoose a option: '))
+print()
 
 
 def add_to_account():
     global balance
-    global account_statement
+    global limit
 
-    value = float(input("Type the value to add in the account: $"))
+    value = float(input("\nType the value to add in the account: $"))
+
     if value >= 0:
-        balance += value
-        print(f"Value: ${value:.2f} succefully added.")  
+        if limit < 500:
+            additional_limit = min(500 - limit, value)
+            limit += additional_limit
+            balance += (value - additional_limit) 
+            print(f"\nValue: ${value:.2f} successfully added.")
+        else:
+            balance += value
+            print(f"\nValue: ${value:.2f} successfully added.")
     else:
-        print('The value must be at least 1 dolar')
+        print('\nThe value must be at least 1 dollar')
 
 
-def with_draw_money():
-    return print('Cash Out')
+def withdrawn_money():
+    global balance
+    global limit
+    global WITHDRAW_LIMITS 
+
+    value = float(input("\nType the value withdraw: $"))
+
+    if WITHDRAW_LIMITS >= 1:
+        if value <= balance:
+            balance -= value
+            WITHDRAW_LIMITS -= 1
+            print(f"\nValue: ${value:.2f} withdraw.")
+        elif (value <=  limit + balance) and (limit > 0):
+            limit_used = (value - balance)
+            limit -= limit_used
+            balance = 0
+            WITHDRAW_LIMITS -= 1
+            print(f"\nValue: ${(value):.2f} withdrawn using limit.")
+        else:
+            print("\nNot enough limit.")
+    else:
+        print('\nTransitions limit made')
+
 
 def account_statement():
     global balance
+    global limit
+    global WITHDRAW_LIMITS
+
     print()
     print("=====Account Statement=====")
-    print(f"Total value: {balance}")
-    print("===========================")
+    if WITHDRAW_LIMITS < 3:
+        print(f"\nYou can make {WITHDRAW_LIMITS} withdraw. ")
+    else:
+        print(f"\nNo withdraw made")
+
+    if limit < 500:
+        print(f"\nLimit value available: {limit}")
+
+    print(f"\nTotal balance account: {balance}\n")
+    print("===========================\n")
+
 
 def exit():
-    return print('Thanks for using our system!!!')
+    return print('\nThanks for using our system!!!')
+
 
 def main():
     choose = options()
     while True:
         if choose == ADD_TO_ACCOUNT:
             add_to_account()
-        elif choose == WITH_DRAW_MONEY:
-            with_draw_money()
+        elif choose == WITHDRAWN_MONEY:
+            withdrawn_money()
         elif choose == ACCOUNT_STATEMENT:
             account_statement()
         elif choose == EXIT_APP:
             exit()
             break
         else:
-            print('Invalid choise')
+            print('\nInvalid choise')
 
         choose = options()
     
