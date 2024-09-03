@@ -5,6 +5,7 @@ EXIT_APP = 4
 
 balance = 0.0
 limit = 500.0
+transactions = " "
 WITHDRAW_LIMITS = 3
 
 
@@ -22,6 +23,7 @@ print()
 def add_to_account():
     global balance
     global limit
+    global transactions
 
     value = float(input("\nType the value to add in the account: $"))
 
@@ -30,9 +32,11 @@ def add_to_account():
             additional_limit = min(500 - limit, value)
             limit += additional_limit
             balance += (value - additional_limit) 
+            transactions += f"\nDeposited: ${value:.2f}"
             print(f"\nValue: ${value:.2f} successfully added.")
         else:
             balance += value
+            transactions += f"\nDeposited: ${value:.2f}"
             print(f"\nValue: ${value:.2f} successfully added.")
     else:
         print('\nThe value must be at least 1 dollar')
@@ -41,43 +45,49 @@ def add_to_account():
 def withdrawn_money():
     global balance
     global limit
+    global transactions
     global WITHDRAW_LIMITS 
 
     value = float(input("\nType the value withdraw: $"))
 
-    if WITHDRAW_LIMITS >= 1:
-        if value <= balance:
-            balance -= value
-            WITHDRAW_LIMITS -= 1
-            print(f"\nValue: ${value:.2f} withdraw.")
-        elif (value <=  limit + balance) and (limit > 0):
-            limit_used = (value - balance)
-            limit -= limit_used
-            balance = 0
-            WITHDRAW_LIMITS -= 1
-            print(f"\nValue: ${(value):.2f} withdrawn using limit.")
-        else:
-            print("\nNot enough limit.")
-    else:
+    if WITHDRAW_LIMITS == 0:
         print('\nTransitions limit made')
+        return
 
-
+    
+    if value <= balance:
+        balance -= value
+        WITHDRAW_LIMITS -= 1
+        transactions += f"\nWithdrawn: ${value:.2f}"
+        print(f"\nValue: ${value:.2f} withdraw.")
+    elif (value <=  limit + balance) and (limit > 0):
+        limit_used = (value - balance)
+        limit -= limit_used
+        balance = 0
+        WITHDRAW_LIMITS -= 1
+        transactions += f"\nWithdrawn: ${value:.2f}"
+        print(f"\nValue: ${(value):.2f} withdrawn using limit.")
+    else:
+        print("\nNot enough limit.")
+    
+        
 def account_statement():
     global balance
     global limit
+    global transactions
     global WITHDRAW_LIMITS
 
     print()
     print("=====Account Statement=====")
     if WITHDRAW_LIMITS < 3:
         print(f"\nYou can make {WITHDRAW_LIMITS} withdraw. ")
-    else:
-        print(f"\nNo withdraw made")
 
     if limit < 500:
-        print(f"\nLimit value available: {limit}")
-
-    print(f"\nTotal balance account: {balance}\n")
+        print(f"\nLimit value available: ${limit:.2f}")
+    
+    print("\nNo transaction made." if transactions == " " else transactions)
+    print()
+    print(f"\nTotal balance account: ${balance:.2f}\n")
     print("===========================\n")
 
 
