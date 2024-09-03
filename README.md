@@ -22,13 +22,13 @@ The goal of this project is to develop a very simple Python-based bank account s
 Clone the project
 
 ```bash
-  git clone https://github.com/daniel-neves-dev/dio_python_banck.git
+  git clone https://github.com/daniel-neves-dev/dio_python_bank.git
 ```
 
 Go to the project directory
 
 ```bash
-  cd your-repository
+  cd dio_python_bank
 ```
 
 On the terminal type
