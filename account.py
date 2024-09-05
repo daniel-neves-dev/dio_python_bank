@@ -1,18 +1,28 @@
 import textwrap
 
-DEPOSITAR = 1
-SACAR = 2
-EXTRATO = 3
-SAIR = 4
+ADICIONAR_CLIENTE = 1
+DEPOSITAR = 2
+SACAR = 3
+EXTRATO = 4
+SAIR = 5
 
 def opcoes():
     print("===== NTT Sistema Bancário =====")
+    print(f"[{ADICIONAR_CLIENTE}]Cadastrar novo cliente")
     print(f"[{DEPOSITAR}]Depositar")
     print(f"[{SACAR}]Sacar")
     print(f"[{EXTRATO}]Extrato")
     print(f"[{SAIR}]Sair")
     
     return int(input(textwrap.dedent('\nEscolha uma opção acima: ')))
+
+def adicionar_cliente(clientes):
+    nome = input("Digite o nome: ")
+    cpf = input("Digite o CPF, somente números: ")
+    
+    clientes.append({"nome": nome, "cpf": cpf})
+    print ("Cliente cadastrado com sucesso")
+
 
 def depositar(valor, saldo, extrato, limite):
     if valor > 0:
@@ -76,9 +86,13 @@ def main():
     limite = 500.0
     extrato = ""
     limite_saques = 3
+    clientes = []
 
     while True:
         escolha = opcoes()
+
+        if escolha == ADICIONAR_CLIENTE:
+            adicionar_cliente(clientes)
 
         if escolha == DEPOSITAR:
             valor = float(input("\nDigite o valor a ser depositado: R$"))
