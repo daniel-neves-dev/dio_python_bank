@@ -1,115 +1,108 @@
-ADD_TO_ACCOUNT = 1
-WITHDRAWN_MONEY = 2
-ACCOUNT_STATEMENT = 3
-EXIT_APP = 4
+DEPOSITAR = 1
+SACAR = 2
+EXTRATO = 3
+SAIR = 4
 
-balance = 0.0
-limit = 500.0
-transactions = " "
-WITHDRAW_LIMITS = 3
-
-
-def options():
+def opcoes():
     print()
-    print("=====Bank System=====\n")
-    print(f"{[ADD_TO_ACCOUNT]} Make a deposit")
-    print(f"{[WITHDRAWN_MONEY]} Cash out")
-    print(f"{[ACCOUNT_STATEMENT]} Account Statement")
-    print(f"{[EXIT_APP]} Exit")
-    return int(input('\nChoose a option: '))
+    print("=====NTT Sistema Bancario=====\n")
+    print(f"{[DEPOSITAR]} Depositar")
+    print(f"{[SACAR]} Sacar")
+    print(f"{[EXTRATO]} Extrato")
+    print(f"{[SAIR]} Sair")
+    return int(input('\nEscolha uma opção acima: '))
 print()
 
-
-def add_to_account():
-    global balance
-    global limit
-    global transactions
-
-    value = float(input("\nType the value to add in the account: $"))
-
-    if value >= 0:
-        if limit < 500:
-            additional_limit = min(500 - limit, value)
-            limit += additional_limit
-            balance += (value - additional_limit) 
-            transactions += f"\nDeposited: ${value:.2f}"
-            print(f"\nValue: ${value:.2f} successfully added.")
+def depositar(valor, saldo, extrato, limite, /):
+   
+    if valor >= 0:
+        if limite < 500:
+            repor_limite = min(500 - limite, valor)
+            limite += repor_limite
+            saldo += (valor - repor_limite) 
+            extrato += f"\nDepositado: ${valor:.2f}"
+            print(f"\nValor de ${valor:.2f}, depositado com sucesso.")
         else:
-            balance += value
-            transactions += f"\nDeposited: ${value:.2f}"
-            print(f"\nValue: ${value:.2f} successfully added.")
+            saldo += valor
+            extrato += f"\nDepositado: ${valor:.2f}"
+            print(f"\nValor de ${valor:.2f}, depositado com sucesso.")
     else:
-        print('\nThe value must be at least 1 dollar')
+        print('\nValor de depospito deve ser acima de zero')
+    
+    return saldo, extrato, limite
 
+def sacar():
+    global saldo
+    global limite
+    global extrato
+    global WITHDRAW_limiteS 
 
-def withdrawn_money():
-    global balance
-    global limit
-    global transactions
-    global WITHDRAW_LIMITS 
+    valor = float(input("\nType the valor withdraw: $"))
 
-    value = float(input("\nType the value withdraw: $"))
-
-    if WITHDRAW_LIMITS == 0:
-        print('\nTransitions limit made')
+    if WITHDRAW_limiteS == 0:
+        print('\nTransitions limite made')
         return
 
-    
-    if value <= balance:
-        balance -= value
-        WITHDRAW_LIMITS -= 1
-        transactions += f"\nWithdrawn: ${value:.2f}"
-        print(f"\nValue: ${value:.2f} withdraw.")
-    elif (value <=  limit + balance) and (limit > 0):
-        limit_used = (value - balance)
-        limit -= limit_used
-        balance = 0
-        WITHDRAW_LIMITS -= 1
-        transactions += f"\nWithdrawn: ${value:.2f}"
-        print(f"\nValue: ${(value):.2f} withdrawn using limit.")
+    if valor <= saldo:
+        saldo -= valor
+        WITHDRAW_limiteS -= 1
+        extrato += f"\nWithdrawn: ${valor:.2f}"
+        print(f"\nvalor: ${valor:.2f} withdraw.")
+
+    elif (valor <=  limite + saldo) and (limite > 0):
+        limite_used = (valor - saldo)
+        limite -= limite_used
+        saldo = 0
+        WITHDRAW_limiteS -= 1
+        extrato += f"\nWithdrawn: ${valor:.2f}"
+        print(f"\nvalor: ${(valor):.2f} withdrawn using limite.")
+
     else:
-        print("\nNot enough limit.")
+        print("\nNot enough limite.")
     
         
-def account_statement():
-    global balance
-    global limit
-    global transactions
-    global WITHDRAW_LIMITS
+def mostar_extrato(saldo, limite, /, *, extrato):
 
-    print()
-    print("=====Account Statement=====")
-    if WITHDRAW_LIMITS < 3:
-        print(f"\nYou can make {WITHDRAW_LIMITS} withdraw. ")
-
-    if limit < 500:
-        print(f"\nLimit value available: ${limit:.2f}")
+    print("\n=====Extrato=====")
     
-    print("\nNo transaction made." if transactions == " " else transactions)
+    print(f"\nValor do limite disponível: R${limite:.2f}")
+
+    print("\nNão foi realizado nenhuma transação hoje." if extrato == " " else extrato)
     print()
-    print(f"\nTotal balance account: ${balance:.2f}\n")
+    print(f"\nSaldo: ${saldo:.2f}\n")
     print("===========================\n")
 
-
-def exit():
-    return print('\nThanks for using our system!!!')
+def sair():
+    return print('\nObrigado por utilizar o nosso sistema!!!\n')
 
 
 def main():
-    choose = options()
-    while True:
-        if choose == ADD_TO_ACCOUNT:
-            add_to_account()
-        elif choose == WITHDRAWN_MONEY:
-            withdrawn_money()
-        elif choose == ACCOUNT_STATEMENT:
-            account_statement()
-        elif choose == EXIT_APP:
-            exit()
-            break
-        else:
-            print('\nInvalid choise')
+    saldo = 0.0
+    limite = 500.0
+    extrato = ""
+    NUMERO_SAQUES = 3
 
-        choose = options()
+    escolha = opcoes()
+
+    while True:
+
+        if escolha == DEPOSITAR:
+            valor = float(input("\nDigite o valor a ser depositatdo: R$"))
+            saldo, extrato, limite = depositar(valor, saldo, extrato, limite)
+
+        elif escolha == SACAR:
+            sacar()
+
+        elif escolha == EXTRATO:
+            mostar_extrato(saldo, limite, extrato=extrato)
+
+        elif SAIR:
+            sair()
+            break
+
+        else:
+            print('\nEscolha uma opção valída')
+
+        escolha = opcoes()
     
 main()
