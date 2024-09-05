@@ -1,16 +1,18 @@
+import textwrap
+
 DEPOSITAR = 1
 SACAR = 2
 EXTRATO = 3
 SAIR = 4
 
 def opcoes():
-    print()
-    print("===== NTT Sistema Bancário =====\n")
-    print(f"[{DEPOSITAR}] Depositar")
-    print(f"[{SACAR}] Sacar")
-    print(f"[{EXTRATO}] Extrato")
-    print(f"[{SAIR}] Sair")
-    return int(input('\nEscolha uma opção acima: '))
+    print("===== NTT Sistema Bancário =====")
+    print(f"[{DEPOSITAR}]Depositar")
+    print(f"[{SACAR}]Sacar")
+    print(f"[{EXTRATO}]Extrato")
+    print(f"[{SAIR}]Sair")
+    
+    return int(input(textwrap.dedent('\nEscolha uma opção acima: ')))
 
 def depositar(valor, saldo, extrato, limite):
     if valor > 0:
@@ -19,11 +21,11 @@ def depositar(valor, saldo, extrato, limite):
             limite += repor_limite
             saldo += (valor - repor_limite)
             extrato += f"\nDepósito: R${valor:.2f}"
-            print(f"\nValor de R${valor:.2f}, depositado com sucesso.")
+            print(f"\nValor de R${valor:.2f}, depositado com sucesso.\n")
         else:
             saldo += valor
             extrato += f"\nDepósito: R${valor:.2f}"
-            print(f"\nValor de R${valor:.2f}, depositado com sucesso.")
+            print(f"\nValor de R${valor:.2f}, depositado com sucesso.\n")
     else:
         print('\nO valor do depósito deve ser maior que zero.')
 
@@ -31,31 +33,39 @@ def depositar(valor, saldo, extrato, limite):
 
 def efetuar_saque(*, valor, saldo, limite, limite_saques, extrato):
     if limite_saques == 0:
-        print('\nLimite de saques atingido.')
+        print('\nLimite de saques diário atingido.')
         return saldo, extrato, limite, limite_saques
 
     if valor <= saldo:
         saldo -= valor
         limite_saques -= 1
-        extrato += f"\nSaque: R${valor:.2f}\nVocê ainda pode realizar {limite_saques} saques."
+        extrato += f"\nSaque:\tR${valor:.2f}"
         print(f"\nSaque realizado com sucesso!")
     elif (valor <= (limite + saldo)) and (limite > 0):
         limite_usado = valor - saldo
         limite -= limite_usado
         saldo = 0
         limite_saques -= 1
-        extrato += f"\nSaque: R${valor:.2f}\nVocê ainda pode realizar {limite_saques} saques."
+        extrato += f"\nSaque:\tR${valor:.2f}"
         print(f"\nSaque realizado com sucesso.\nFoi retirado R${limite_usado:.2f} do seu limite.")
     else:
         print("\nSaldo e limite insuficientes.")
 
     return saldo, extrato, limite, limite_saques
 
-def mostrar_extrato(saldo, limite, *, extrato):
+def mostrar_extrato(saldo, limite, limite_saques, *, extrato):
     print("\n===== Extrato =====")
-    print(f"\nLimite disponível: R${limite:.2f}")
+    print(f"\nLimite disponível:\tR${limite:.2f}")
+    
+    if limite_saques == 2:
+        print(f"\nVocê pode realizar {limite_saques} saques.")
+    elif limite_saques == 1:
+        print(f"\nVocê pode realizar somente mais 1 saque.")
+    elif limite_saques == 0:
+        print(f"\nVocê não pode realizar nenhum saque.")
+    
     print("\nNenhuma transação realizada." if not extrato else extrato)
-    print(f"\nSaldo: R${saldo:.2f}\n")
+    print(f"\nSaldo:\tR${saldo:.2f}")
     print("===========================\n")
 
 def sair():
@@ -75,7 +85,7 @@ def main():
             saldo, extrato, limite = depositar(valor, saldo, extrato, limite)
 
         elif escolha == EXTRATO:
-            mostrar_extrato(saldo, limite, extrato=extrato)
+            mostrar_extrato(saldo, limite, limite_saques,extrato=extrato)
 
         elif escolha == SACAR:
             valor = float(input("\nDigite o valor para efetuar o saque: R$"))
