@@ -51,8 +51,7 @@ def conta_corrente(AGENCIA, clientes, numero_conta):
                 return ({"AGENCIA": AGENCIA, "numero_conta": numero_conta, "cliente":cliente })
             else: return
     else:
-        print('Cliente não cadastrado')
-            
+        print('Cliente não cadastrado')            
 
 def mostrar_clientes(clientes, contas):
     print("\n======= Lista de Clientes =======")
@@ -93,29 +92,35 @@ def buscar_cliente(clientes, contas):
                     print("Nenhuma conta cadastrada para este cliente.")
     else:
         print('Cliente não cadastrado')
-        
-
+    
 def depositar(valor, saldo, extrato, limite):
-    if valor > 0:
-        if limite < 500:
-            repor_limite = min(500 - limite, valor)
-            limite += repor_limite
-            saldo += (valor - repor_limite)
-            extrato += f"\nDepósito: R${valor:.2f}"
-            print(f"\nValor de R${valor:.2f}, depositado com sucesso.\n")
-        else:
-            saldo += valor
-            extrato += f"\nDepósito: R${valor:.2f}"
-            print(f"\nValor de R${valor:.2f}, depositado com sucesso.\n")
-    else:
+    
+    if valor <= 0:
         print('\nO valor do depósito deve ser maior que zero.')
+        return saldo, extrato, limite
+    
+    if limite < 500:
+        repor_limite = min(500 - limite, valor)
+        limite += repor_limite
+        saldo += (valor - repor_limite)
+        extrato += f"\nDepósito: R${valor:.2f}"
+        print(f"\nValor de R${valor:.2f}, depositado com sucesso.\n")
+    else:
+        saldo += valor
+        extrato += f"\nDepósito: R${valor:.2f}"
+        print(f"\nValor de R${valor:.2f}, depositado com sucesso.\n")
 
     return saldo, extrato, limite
 
-def efetuar_saque(*, valor, saldo, limite,LIMITE_SAQUES, extrato):
+def efetuar_saque(*, valor, saldo, limite, extrato, LIMITE_SAQUES):
+    
     if LIMITE_SAQUES == 0:
-        print('\nLimite de saques diário atingido.')
-        return saldo, extrato, limite,LIMITE_SAQUES
+        print('\n*Limite de saques diário atingido.*')
+        return saldo, extrato, limite, LIMITE_SAQUES
+    
+    if valor <= 0:
+        print('\n*O valor do saque deve ser maior que zero.*')
+        return saldo, extrato, limite, LIMITE_SAQUES
 
     if valor <= saldo:
         saldo -= valor
@@ -130,20 +135,28 @@ def efetuar_saque(*, valor, saldo, limite,LIMITE_SAQUES, extrato):
         extrato += f"\nSaque:\tR${valor:.2f}"
         print(f"\nSaque realizado com sucesso.\nFoi retirado R${limite_usado:.2f} do seu limite.")
     else:
-        print("\nSaldo e limite insuficientes.")
+        print("\n*Saldo e limite insuficientes.*")
 
     return saldo, extrato, limite, LIMITE_SAQUES
 
-def mostrar_extrato(saldo, limite, LIMITE_SAQUES, *, extrato):
+def mostrar_extrato(saldo, limite, LIMITE_SAQUES, LIMITE_TRANSACOES, *, extrato):
     print("\n========== Extrato ==========")
+
     print(f"\nLimite disponível:\tR${limite:.2f}")
-    
-    if LIMITE_SAQUES > 2:
+
+    if LIMITE_SAQUES >= 2:
         print(f"\nVocê pode realizar {LIMITE_SAQUES} saques.")
     elif LIMITE_SAQUES == 1:
-        print(f"\nVocê pode realizar somente mais 1 saque.")
+        print(f"\nVocê pode realizar somente mais uma saque.")
     elif LIMITE_SAQUES == 0:
-        print(f"\nVocê não pode realizar nenhum saque.")
+        print(f"\n*Você excedeu o limite de saques para a data de hoje.*")        
+    
+    if LIMITE_TRANSACOES >= 2:
+        print(f"\nVocê pode realizar {LIMITE_TRANSACOES} transações.")
+    elif LIMITE_TRANSACOES == 1:
+        print(f"\nVocê pode realizar somente mais uma transação.")
+    elif LIMITE_TRANSACOES == 0:
+        print(f"\n*Você excedeu o limite de transações para a data de hoje.*")
     
     print("\nNenhuma transação realizada." if not extrato else extrato)
     print(f"\nSaldo:\tR${saldo:.2f}")
@@ -154,10 +167,11 @@ def sair():
 
 def main():
     AGENCIA = '0001'
+    LIMITE_SAQUES = 3
+    LIMITE_TRANSACOES = 5
     saldo = 0.0
     limite = 500.0
     extrato = ""
-    LIMITE_SAQUES = 3
     clientes = []
     contas = []
 
@@ -181,21 +195,25 @@ def main():
             buscar_cliente(clientes, contas)
 
         elif escolha == DEPOSITAR:
-            valor = float(input("\nDigite o valor a ser depositado: R$"))
-            saldo, extrato, limite = depositar(valor, saldo, extrato, limite)
+            if LIMITE_TRANSACOES == 0:
+                print(f"\n*Você excedeu o limite de transações para a data de hoje.*")
+            else:
+                valor = float(input("\nDigite o valor a ser depositado: R$"))
+                saldo, extrato, limite, = depositar(valor, saldo, extrato, limite)
+                if valor > 0:
+                    LIMITE_TRANSACOES -= 1
+        
+        elif escolha == SACAR:
+            if LIMITE_TRANSACOES == 0:
+                print(f"\n*Você excedeu o limite de transações para a data de hoje.*")
+            else:
+                valor = float(input("\nDigite o valor para efetuar o saque: R$"))
+                saldo, extrato, limite, LIMITE_SAQUES = efetuar_saque(valor=valor, saldo=saldo, limite=limite, extrato=extrato, LIMITE_SAQUES=LIMITE_SAQUES)
+                if valor > 0:
+                    LIMITE_TRANSACOES -= 1
 
         elif escolha == EXTRATO:
-            mostrar_extrato(saldo, limite, LIMITE_SAQUES,extrato=extrato)
-
-        elif escolha == SACAR:
-            valor = float(input("\nDigite o valor para efetuar o saque: R$"))
-            saldo, extrato, limite, LIMITE_SAQUES = efetuar_saque(
-                valor=valor,
-                saldo=saldo,
-                limite=limite,
-                extrato=extrato,
-                LIMITE_SAQUES=LIMITE_SAQUES
-            )
+            mostrar_extrato(saldo, limite, LIMITE_SAQUES, LIMITE_TRANSACOES, extrato=extrato)
 
         elif escolha == SAIR:
             sair()
