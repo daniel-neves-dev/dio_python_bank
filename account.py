@@ -5,18 +5,21 @@ import pytz
 ADICIONAR_CLIENTE = 1
 CRIAR_CONTA_CORRENTE = 2
 MOSTRAR_CLIENTES = 3
-BUSCAR_CLIENTE = 4
-DEPOSITAR = 5
-SACAR = 6
-EXTRATO = 7
-SAIR = 8
+LISTA_CONTAS = 4
+BUSCAR_CLIENTE = 5
+DEPOSITAR = 6
+SACAR = 7
+EXTRATO = 8
+SAIR = 9
 
 def opcoes():
     print("\n===== NTT Sistema Bancário =====")
     print(data_atual())
+    print()
     print(f"[{ADICIONAR_CLIENTE}]Cadastrar novo cliente")
     print(f"[{CRIAR_CONTA_CORRENTE}]Cadastrar Conta corrente")
     print(f"[{MOSTRAR_CLIENTES}]Visualizar lista de clientes")
+    print(f"[{LISTA_CONTAS}]Visualizar lista de contas")
     print(f"[{BUSCAR_CLIENTE}]Procurar Cliente")
     print(f"[{DEPOSITAR}]Depositar")
     print(f"[{SACAR}]Sacar")
@@ -71,13 +74,26 @@ def mostrar_clientes(clientes, contas):
 
     for cliente in clientes_ordenados:
         print(f"\nNome: {cliente['nome']}\nCPF: {cliente['cpf']}")
-
+        
         contas_cliente = [conta for conta in contas if conta['cliente']['cpf'] == cliente['cpf']]
         if contas_cliente:
             for conta in contas_cliente:
                 print(f"Agência: {conta['AGENCIA']} - Número da Conta: {conta['numero_conta']}")
         else:
             print("Nenhuma conta cadastrada para este cliente.")
+
+def mostrar_lista_contas(contas):
+    print("\n======= Lista de Contas =======")
+
+    for conta in contas:
+        lista = f""" 
+            Agência: {conta['AGENCIA']}
+            Conta Corrente: {conta['numero_conta']}
+            Cliente: {conta['cliente']['nome']} - CPF: {conta['cliente']['cpf']}
+        """
+        print(textwrap.dedent(lista))
+    print("\n------------------------------")
+
 
 def buscar_cliente(clientes, contas):
     print("\n========== Cliente ==========")
@@ -206,6 +222,9 @@ def main():
             if conta:
                 contas.append(conta)
         
+        elif escolha == LISTA_CONTAS:
+            mostrar_lista_contas(contas)
+
         elif escolha == MOSTRAR_CLIENTES:
             mostrar_clientes(clientes, contas)
         
