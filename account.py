@@ -55,7 +55,7 @@ def conta_corrente(AGENCIA, clientes, numero_conta):
             
 
 def mostrar_clientes(clientes, contas):
-    print("\n====== Lista de Clientes ======")
+    print("\n======= Lista de Clientes =======")
     if not clientes:
         banco_dados_vazio(clientes)
         return
@@ -72,7 +72,8 @@ def mostrar_clientes(clientes, contas):
         else:
             print("Nenhuma conta cadastrada para este cliente.")
 
-def buscar_cliente(clientes):
+def buscar_cliente(clientes, contas):
+    print("\n========== Cliente ==========")
     if not clientes:
         banco_dados_vazio(clientes)
         return
@@ -84,6 +85,12 @@ def buscar_cliente(clientes):
     if cliente_cadastrado:
         for cliente in cliente_cadastrado:
                 print(f"\nNome: {cliente['nome']}\nCPF: {cliente['cpf']}")
+                contas_cliente = [conta for conta in contas if conta['cliente']['cpf'] == cliente['cpf']]
+                if contas_cliente:
+                    for conta in contas_cliente:
+                        print(f"Agência: {conta['AGENCIA']} - Número da Conta: {conta['numero_conta']}")
+                else:
+                    print("Nenhuma conta cadastrada para este cliente.")
     else:
         print('Cliente não cadastrado')
         
@@ -128,7 +135,7 @@ def efetuar_saque(*, valor, saldo, limite,LIMITE_SAQUES, extrato):
     return saldo, extrato, limite, LIMITE_SAQUES
 
 def mostrar_extrato(saldo, limite, LIMITE_SAQUES, *, extrato):
-    print("\n===== Extrato =====")
+    print("\n========== Extrato ==========")
     print(f"\nLimite disponível:\tR${limite:.2f}")
     
     if LIMITE_SAQUES > 2:
@@ -140,7 +147,7 @@ def mostrar_extrato(saldo, limite, LIMITE_SAQUES, *, extrato):
     
     print("\nNenhuma transação realizada." if not extrato else extrato)
     print(f"\nSaldo:\tR${saldo:.2f}")
-    print("===========================\n")
+    print("\n============================")
 
 def sair():
     print('\nObrigado por utilizar o nosso sistema!\n')
@@ -171,7 +178,7 @@ def main():
             mostrar_clientes(clientes, contas)
         
         elif escolha == BUSCAR_CLIENTE:
-            buscar_cliente(clientes)
+            buscar_cliente(clientes, contas)
 
         elif escolha == DEPOSITAR:
             valor = float(input("\nDigite o valor a ser depositado: R$"))
