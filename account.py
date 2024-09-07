@@ -1,16 +1,18 @@
 import textwrap
 
 ADICIONAR_CLIENTE = 1
-MOSTRAR_CLIENTES = 2
-BUSCAR_CLIENTE = 3
-DEPOSITAR = 4
-SACAR = 5
-EXTRATO = 6
-SAIR = 7
+CRIAR_CONTA_CORRENTE = 2
+MOSTRAR_CLIENTES = 3
+BUSCAR_CLIENTE = 4
+DEPOSITAR = 5
+SACAR = 6
+EXTRATO = 7
+SAIR = 8
 
 def opcoes():
     print("\n===== NTT Sistema Bancário =====")
     print(f"[{ADICIONAR_CLIENTE}]Cadastrar novo cliente")
+    print(f"[{CRIAR_CONTA_CORRENTE}]Cadastrar Conta corrente")
     print(f"[{MOSTRAR_CLIENTES}]Visualizar lista de clientes")
     print(f"[{BUSCAR_CLIENTE}]Procurar Cliente")
     print(f"[{DEPOSITAR}]Depositar")
@@ -20,9 +22,9 @@ def opcoes():
     
     return int(input(textwrap.dedent('\nEscolha uma opção acima: ')))
 
+
 def banco_dados_vazio(clientes):
-    if not clientes:
-       print("\nNenhum cliente foi cadastrado")
+    print("\nNenhum cliente foi cadastrado")
     
 def adicionar_cliente(clientes):
     cpf = input("Digite o CPF, somente números: ")
@@ -37,7 +39,22 @@ def adicionar_cliente(clientes):
     clientes.append({"nome": nome, "cpf": cpf})
     print ("\nCliente cadastrado com sucesso")
 
-def mostrar_clientes(clientes):
+def conta_corrente(AGENCIA, clientes, numero_conta):
+    cpf = input("Digite o CPF, somente números: ")
+    cliente_cadastrado = [cliente for cliente in clientes if cliente['cpf'] == cpf]
+
+    if cliente_cadastrado:
+        for cliente in cliente_cadastrado:
+            adicionar_conta = input(f"Criar conta para {cliente['nome']}? [S/N]")
+            if adicionar_conta.lower() == 's':
+                print(f"Conta cadastrada com sucesso\nNúmero conta: {numero_conta}")
+                return ({"AGENCIA": AGENCIA, "numero_conta": numero_conta, "cliente":cliente })
+            else: return
+    else:
+        print('Cliente não cadastrado')
+            
+
+def mostrar_clientes(clientes, contas):
     print("\n====== Lista de Clientes ======")
     if not clientes:
         banco_dados_vazio(clientes)
@@ -48,6 +65,13 @@ def mostrar_clientes(clientes):
     for cliente in clientes_ordenados:
         print(f"\nNome: {cliente['nome']}\nCPF: {cliente['cpf']}")
 
+        contas_cliente = [conta for conta in contas if conta['cliente']['cpf'] == cliente['cpf']]
+        if contas_cliente:
+            for conta in contas_cliente:
+                print(f"Agência: {conta['AGENCIA']} - Número da Conta: {conta['numero_conta']}")
+        else:
+            print("Nenhuma conta cadastrada para este cliente.")
+
 def buscar_cliente(clientes):
     if not clientes:
         banco_dados_vazio(clientes)
@@ -55,11 +79,14 @@ def buscar_cliente(clientes):
 
     cpf = input("Digite o número do CPF: ")
 
-    for cliente in clientes:
-        if cliente['cpf'] == cpf:
-            print(f"\nNome: {cliente['nome']}\nCPF: {cliente['cpf']}")
-        else:
-            print('Cliente não cadastrado')
+    cliente_cadastrado = [cliente for cliente in clientes if cliente['cpf'] == cpf]
+
+    if cliente_cadastrado:
+        for cliente in cliente_cadastrado:
+                print(f"\nNome: {cliente['nome']}\nCPF: {cliente['cpf']}")
+    else:
+        print('Cliente não cadastrado')
+        
 
 def depositar(valor, saldo, extrato, limite):
     if valor > 0:
@@ -78,37 +105,37 @@ def depositar(valor, saldo, extrato, limite):
 
     return saldo, extrato, limite
 
-def efetuar_saque(*, valor, saldo, limite, limite_saques, extrato):
-    if limite_saques == 0:
+def efetuar_saque(*, valor, saldo, limite,LIMITE_SAQUES, extrato):
+    if LIMITE_SAQUES == 0:
         print('\nLimite de saques diário atingido.')
-        return saldo, extrato, limite, limite_saques
+        return saldo, extrato, limite,LIMITE_SAQUES
 
     if valor <= saldo:
         saldo -= valor
-        limite_saques -= 1
+        LIMITE_SAQUES -= 1
         extrato += f"\nSaque:\tR${valor:.2f}"
         print(f"\nSaque realizado com sucesso!")
     elif (valor <= (limite + saldo)) and (limite > 0):
         limite_usado = valor - saldo
         limite -= limite_usado
         saldo = 0
-        limite_saques -= 1
+        LIMITE_SAQUES -= 1
         extrato += f"\nSaque:\tR${valor:.2f}"
         print(f"\nSaque realizado com sucesso.\nFoi retirado R${limite_usado:.2f} do seu limite.")
     else:
         print("\nSaldo e limite insuficientes.")
 
-    return saldo, extrato, limite, limite_saques
+    return saldo, extrato, limite, LIMITE_SAQUES
 
-def mostrar_extrato(saldo, limite, limite_saques, *, extrato):
+def mostrar_extrato(saldo, limite, LIMITE_SAQUES, *, extrato):
     print("\n===== Extrato =====")
     print(f"\nLimite disponível:\tR${limite:.2f}")
     
-    if limite_saques == 2:
-        print(f"\nVocê pode realizar {limite_saques} saques.")
-    elif limite_saques == 1:
+    if LIMITE_SAQUES > 2:
+        print(f"\nVocê pode realizar {LIMITE_SAQUES} saques.")
+    elif LIMITE_SAQUES == 1:
         print(f"\nVocê pode realizar somente mais 1 saque.")
-    elif limite_saques == 0:
+    elif LIMITE_SAQUES == 0:
         print(f"\nVocê não pode realizar nenhum saque.")
     
     print("\nNenhuma transação realizada." if not extrato else extrato)
@@ -119,11 +146,13 @@ def sair():
     print('\nObrigado por utilizar o nosso sistema!\n')
 
 def main():
+    AGENCIA = '0001'
     saldo = 0.0
     limite = 500.0
     extrato = ""
-    limite_saques = 3
+    LIMITE_SAQUES = 3
     clientes = []
+    contas = []
 
     while True:
         escolha = opcoes()
@@ -131,8 +160,15 @@ def main():
         if escolha == ADICIONAR_CLIENTE:
             adicionar_cliente(clientes)
         
+        elif escolha == CRIAR_CONTA_CORRENTE:
+            numero_conta = len(contas) + 1
+            conta = conta_corrente(AGENCIA, clientes, numero_conta)
+
+            if conta:
+                contas.append(conta)
+        
         elif escolha == MOSTRAR_CLIENTES:
-            mostrar_clientes(clientes)
+            mostrar_clientes(clientes, contas)
         
         elif escolha == BUSCAR_CLIENTE:
             buscar_cliente(clientes)
@@ -142,16 +178,16 @@ def main():
             saldo, extrato, limite = depositar(valor, saldo, extrato, limite)
 
         elif escolha == EXTRATO:
-            mostrar_extrato(saldo, limite, limite_saques,extrato=extrato)
+            mostrar_extrato(saldo, limite, LIMITE_SAQUES,extrato=extrato)
 
         elif escolha == SACAR:
             valor = float(input("\nDigite o valor para efetuar o saque: R$"))
-            saldo, extrato, limite, limite_saques = efetuar_saque(
+            saldo, extrato, limite, LIMITE_SAQUES = efetuar_saque(
                 valor=valor,
                 saldo=saldo,
                 limite=limite,
                 extrato=extrato,
-                limite_saques=limite_saques
+                LIMITE_SAQUES=LIMITE_SAQUES
             )
 
         elif escolha == SAIR:
