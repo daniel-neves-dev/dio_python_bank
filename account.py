@@ -4,29 +4,32 @@ import pytz
 
 ADICIONAR_CLIENTE = 1
 CRIAR_CONTA_CORRENTE = 2
-MOSTRAR_CLIENTES = 3
-LISTA_CONTAS = 4
-BUSCAR_CLIENTE = 5
-DEPOSITAR = 6
-SACAR = 7
-EXTRATO = 8
-SAIR = 9
+EXCLUIR_CONTA_CORRENTE = 3
+MOSTRAR_CLIENTES = 4
+LISTA_CONTAS = 5
+BUSCAR_CLIENTE = 6
+DEPOSITAR = 7
+SACAR = 8
+EXTRATO = 9
+SAIR = 10
 
 def opcoes():
     print("\n===== NTT Sistema Bancário =====")
     print(data_atual())
     print()
-    print(f"[{ADICIONAR_CLIENTE}]Cadastrar novo cliente")
-    print(f"[{CRIAR_CONTA_CORRENTE}]Cadastrar Conta corrente")
-    print(f"[{MOSTRAR_CLIENTES}]Visualizar lista de clientes")
-    print(f"[{LISTA_CONTAS}]Visualizar lista de contas")
-    print(f"[{BUSCAR_CLIENTE}]Procurar Cliente")
-    print(f"[{DEPOSITAR}]Depositar")
-    print(f"[{SACAR}]Sacar")
-    print(f"[{EXTRATO}]Extrato")
-    print(f"[{SAIR}]Sair")
+    print(f"[{ADICIONAR_CLIENTE}] Cadastrar novo cliente")
+    print(f"[{CRIAR_CONTA_CORRENTE}] Cadastrar Conta corrente")
+    print(f"[{EXCLUIR_CONTA_CORRENTE}] Encerrar conta corrente")
+    print(f"[{MOSTRAR_CLIENTES}] Visualizar lista de clientes")
+    print(f"[{LISTA_CONTAS}] Visualizar lista de contas")
+    print(f"[{BUSCAR_CLIENTE}] Procurar Cliente")
+    print(f"[{DEPOSITAR}] Depositar")
+    print(f"[{SACAR}] Sacar")
+    print(f"[{EXTRATO}] Extrato")
+    print(f"[{SAIR}] Sair")
     
     return int(input(textwrap.dedent('\nEscolha uma opção acima: ')))
+
 
 def data_atual():
     data = datetime.now(pytz.timezone("America/Sao_Paulo"))
@@ -62,7 +65,21 @@ def conta_corrente(AGENCIA, clientes, numero_conta):
                 return ({"AGENCIA": AGENCIA, "numero_conta": numero_conta, "cliente":cliente })
             else: return
     else:
-        print('Cliente não cadastrado')            
+        print('Cliente não cadastrado')
+
+def encerrar_conta_corrente(contas):
+    numero_conta = input("\nDigite o número da conta conrrente a ser encerrada: ")
+
+    for conta in contas:
+        if conta['numero_conta'] == int(numero_conta):
+            print(f"\nConta Corrente: {conta['numero_conta']}\nCliente: {conta['cliente']['nome']} - CPF: {conta['cliente']['cpf']}")
+            excluir_conta = input('Deseja encerrar esta conta corrente? [S/N]')
+            if excluir_conta.lower() == 's':
+                contas.remove(conta)
+            print('\nConta encerrada com sucesso')
+        else:
+            print('\nConta não encontrada')
+            return
 
 def mostrar_clientes(clientes, contas):
     print("\n======= Lista de Clientes =======")
@@ -80,7 +97,7 @@ def mostrar_clientes(clientes, contas):
             for conta in contas_cliente:
                 print(f"Agência: {conta['AGENCIA']} - Número da Conta: {conta['numero_conta']}")
         else:
-            print("Nenhuma conta cadastrada para este cliente.")
+            print("\nNenhuma conta cadastrada para este cliente.")
 
 def mostrar_lista_contas(contas):
     print("\n======= Lista de Contas =======")
@@ -101,7 +118,7 @@ def buscar_cliente(clientes, contas):
         banco_dados_vazio(clientes)
         return
 
-    cpf = input("Digite o número do CPF: ")
+    cpf = input("\nDigite o número do CPF: ")
 
     cliente_cadastrado = [cliente for cliente in clientes if cliente['cpf'] == cpf]
 
@@ -111,11 +128,11 @@ def buscar_cliente(clientes, contas):
                 contas_cliente = [conta for conta in contas if conta['cliente']['cpf'] == cliente['cpf']]
                 if contas_cliente:
                     for conta in contas_cliente:
-                        print(f"Agência: {conta['AGENCIA']} - Número da Conta: {conta['numero_conta']}")
+                        print(f"\nAgência: {conta['AGENCIA']} - Número da Conta: {conta['numero_conta']}")
                 else:
-                    print("Nenhuma conta cadastrada para este cliente.")
+                    print("\nNenhuma conta cadastrada para este cliente.")
     else:
-        print('Cliente não cadastrado')
+        print('\nCliente não cadastrado')
     
 def depositar(valor, saldo, extrato, limite):
     
@@ -127,12 +144,12 @@ def depositar(valor, saldo, extrato, limite):
         repor_limite = min(500 - limite, valor)
         limite += repor_limite
         saldo += (valor - repor_limite)
-        extrato += f"\n{data_atual()} - Depósito: R${valor:.2f}"
-        print(f"\nValor de R${valor:.2f}, depositado com sucesso.\n")
+        extrato += f"\n{data_atual()} - Crédito: R${valor:.2f}"
+        print(f"\nValor de R${valor:.2f}, foi creditado na sua conta.\n")
     else:
         saldo += valor
-        extrato += f"\n{data_atual()} - Depósito: R${valor:.2f}"
-        print(f"\nValor de R${valor:.2f}, depositado com sucesso.\n")
+        extrato += f"\n{data_atual()} - Crédito: R${valor:.2f}"
+        print(f"\nValor de R${valor:.2f}, foi creditado na sua conta.\n")
 
     return saldo, extrato, limite
 
@@ -149,15 +166,15 @@ def efetuar_saque(*, valor, saldo, limite, extrato, LIMITE_SAQUES):
     if valor <= saldo:
         saldo -= valor
         LIMITE_SAQUES -= 1
-        extrato += f"\n{data_atual()} - Saque: R${valor:.2f}"
+        extrato += f"\n{data_atual()} - Débito: R${valor:.2f}"
         print(f"\nSaque realizado com sucesso!")
     elif (valor <= (limite + saldo)) and (limite > 0):
         limite_usado = valor - saldo
         limite -= limite_usado
         saldo = 0
         LIMITE_SAQUES -= 1
-        extrato += f"\n{data_atual()} - Saque: R${valor:.2f}"
-        print(f"\nSaque realizado com sucesso.\nFoi retirado R${limite_usado:.2f} do seu limite.")
+        extrato += f"\n{data_atual()} - Débito: R${valor:.2f}"
+        print(f"\nSaque realizado com sucesso.\nFoi debitado R${limite_usado:.2f} do seu limite.")
     else:
         print("\n*Saldo e limite insuficientes.*")
 
@@ -221,7 +238,10 @@ def main():
 
             if conta:
                 contas.append(conta)
-        
+
+        elif escolha == EXCLUIR_CONTA_CORRENTE:        
+            encerrar_conta_corrente(contas)
+
         elif escolha == LISTA_CONTAS:
             mostrar_lista_contas(contas)
 
