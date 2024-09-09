@@ -6,12 +6,13 @@ ADICIONAR_CLIENTE = 1
 CRIAR_CONTA_CORRENTE = 2
 EXCLUIR_CONTA_CORRENTE = 3
 MOSTRAR_CLIENTES = 4
-LISTA_CONTAS = 5
-BUSCAR_CLIENTE = 6
-DEPOSITAR = 7
-SACAR = 8
-EXTRATO = 9
-SAIR = 10
+EXCLUIR_CLIENTES = 5
+LISTA_CONTAS = 6
+BUSCAR_CLIENTE = 7
+DEPOSITAR = 8
+SACAR = 9
+EXTRATO = 10
+SAIR = 11
 
 def opcoes():
     print("\n===== NTT Sistema Bancário =====")
@@ -21,6 +22,7 @@ def opcoes():
     print(f"[{CRIAR_CONTA_CORRENTE}] Cadastrar Conta corrente")
     print(f"[{EXCLUIR_CONTA_CORRENTE}] Encerrar conta corrente")
     print(f"[{MOSTRAR_CLIENTES}] Visualizar lista de clientes")
+    print(f"[{EXCLUIR_CLIENTES}] Excluir cliente")
     print(f"[{LISTA_CONTAS}] Visualizar lista de contas")
     print(f"[{BUSCAR_CLIENTE}] Procurar Cliente")
     print(f"[{DEPOSITAR}] Depositar")
@@ -48,7 +50,7 @@ def adicionar_cliente(clientes):
             print('Cliente já cadastrado')
             return
 
-    nome = input("Digite o nome: ")
+    nome = input("Digite o nome completo: ")
 
     clientes.append({"nome": nome, "cpf": cpf})
     print ("\nCliente cadastrado com sucesso")
@@ -67,19 +69,35 @@ def conta_corrente(AGENCIA, clientes, numero_conta):
     else:
         print('Cliente não cadastrado')
 
-def encerrar_conta_corrente(contas):
-    numero_conta = input("\nDigite o número da conta conrrente a ser encerrada: ")
+def encerrar_conta_corrente(contas, clientes):
 
-    for conta in contas:
-        if conta['numero_conta'] == int(numero_conta):
-            print(f"\nConta Corrente: {conta['numero_conta']}\nCliente: {conta['cliente']['nome']} - CPF: {conta['cliente']['cpf']}")
-            excluir_conta = input('Deseja encerrar esta conta corrente? [S/N]')
-            if excluir_conta.lower() == 's':
-                contas.remove(conta)
-            print('\nConta encerrada com sucesso')
-        else:
-            print('\nConta não encontrada')
-            return
+    cpf = input("\nDigite o número do CPF: ")
+
+    cliente_cadastrado = [cliente for cliente in clientes if cliente['cpf'] == cpf]
+
+    if not cliente_cadastrado:
+        print('\nCliente não cadastrado')
+        return
+
+    if cliente_cadastrado:
+        for cliente in cliente_cadastrado:
+                print(f"\nNome: {cliente['nome']}\nCPF: {cliente['cpf']}")
+                contas_cliente = [conta for conta in contas if conta['cliente']['cpf'] == cliente['cpf']]
+                if contas_cliente:
+                    for conta in contas_cliente:
+                        print(f"\nAgência: {conta['AGENCIA']} - Número da Conta: {conta['numero_conta']}")
+        
+        numero_conta = input("\nDigite o número da conta conrrente a ser encerrada: ")
+
+        for conta in contas:
+            if conta['numero_conta'] == int(numero_conta):
+                excluir_conta = input('Deseja encerrar esta conta corrente? [S/N]')
+                if excluir_conta.lower() == 's':
+                    contas.remove(conta)
+                print('\nConta encerrada com sucesso')
+                return
+            
+        print('\nConta não encontrada')  
 
 def mostrar_clientes(clientes, contas):
     print("\n======= Lista de Clientes =======")
@@ -99,6 +117,33 @@ def mostrar_clientes(clientes, contas):
         else:
             print("\nNenhuma conta cadastrada para este cliente.")
 
+def excuir_clientes(clientes, contas):
+    print("\n========== Excluir Cliente ==========")
+    if not clientes:
+        banco_dados_vazio(clientes)
+        return
+
+    cpf = input("\nDigite o número do CPF: ")
+
+    cliente_cadastrado = [cliente for cliente in clientes if cliente['cpf'] == cpf]
+
+    if not cliente_cadastrado:
+        print('\nCliente não cadastrado')
+        return
+    
+    if cliente_cadastrado:
+        for cliente in cliente_cadastrado:
+                print(f"\nNome: {cliente['nome']}\nCPF: {cliente['cpf']}")
+                excuir_cliente = input('Deseja deletear este cliente do sistema? [S/N]')
+                if excuir_cliente.lower() == 's':
+                    contas_cliente = [conta for conta in contas if conta['cliente']['cpf'] == cliente['cpf']]
+                    for conta in contas_cliente:
+                        contas.remove(conta)
+                    clientes.remove(cliente)
+                    print('\nCliente, e contas corrente, removido com sucesso')
+                    return
+        
+
 def mostrar_lista_contas(contas):
     print("\n======= Lista de Contas =======")
 
@@ -110,7 +155,6 @@ def mostrar_lista_contas(contas):
         """
         print(textwrap.dedent(lista))
     print("\n------------------------------")
-
 
 def buscar_cliente(clientes, contas):
     print("\n========== Cliente ==========")
@@ -240,7 +284,7 @@ def main():
                 contas.append(conta)
 
         elif escolha == EXCLUIR_CONTA_CORRENTE:        
-            encerrar_conta_corrente(contas)
+            encerrar_conta_corrente(contas, clientes)
 
         elif escolha == LISTA_CONTAS:
             mostrar_lista_contas(contas)
@@ -250,6 +294,9 @@ def main():
         
         elif escolha == BUSCAR_CLIENTE:
             buscar_cliente(clientes, contas)
+
+        elif escolha == EXCLUIR_CLIENTES:
+            excuir_clientes(clientes, contas)
 
         elif escolha == DEPOSITAR:
             if LIMITE_TRANSACOES == 0:
