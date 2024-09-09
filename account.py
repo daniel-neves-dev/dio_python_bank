@@ -1,4 +1,6 @@
 import textwrap
+from datetime import datetime
+import pytz
 
 ADICIONAR_CLIENTE = 1
 CRIAR_CONTA_CORRENTE = 2
@@ -11,6 +13,7 @@ SAIR = 8
 
 def opcoes():
     print("\n===== NTT Sistema Bancário =====")
+    print(data_atual())
     print(f"[{ADICIONAR_CLIENTE}]Cadastrar novo cliente")
     print(f"[{CRIAR_CONTA_CORRENTE}]Cadastrar Conta corrente")
     print(f"[{MOSTRAR_CLIENTES}]Visualizar lista de clientes")
@@ -22,6 +25,11 @@ def opcoes():
     
     return int(input(textwrap.dedent('\nEscolha uma opção acima: ')))
 
+def data_atual():
+    data = datetime.now(pytz.timezone("America/Sao_Paulo"))
+    mascara_ptbr = "%d/%m/%Y - %H:%M"
+    dataBR = data.strftime(mascara_ptbr)
+    return dataBR
 
 def banco_dados_vazio(clientes):
     print("\nNenhum cliente foi cadastrado")
@@ -103,11 +111,11 @@ def depositar(valor, saldo, extrato, limite):
         repor_limite = min(500 - limite, valor)
         limite += repor_limite
         saldo += (valor - repor_limite)
-        extrato += f"\nDepósito: R${valor:.2f}"
+        extrato += f"\n{data_atual()} - Depósito: R${valor:.2f}"
         print(f"\nValor de R${valor:.2f}, depositado com sucesso.\n")
     else:
         saldo += valor
-        extrato += f"\nDepósito: R${valor:.2f}"
+        extrato += f"\n{data_atual()} - Depósito: R${valor:.2f}"
         print(f"\nValor de R${valor:.2f}, depositado com sucesso.\n")
 
     return saldo, extrato, limite
@@ -125,14 +133,14 @@ def efetuar_saque(*, valor, saldo, limite, extrato, LIMITE_SAQUES):
     if valor <= saldo:
         saldo -= valor
         LIMITE_SAQUES -= 1
-        extrato += f"\nSaque:\tR${valor:.2f}"
+        extrato += f"\n{data_atual()} - Saque: R${valor:.2f}"
         print(f"\nSaque realizado com sucesso!")
     elif (valor <= (limite + saldo)) and (limite > 0):
         limite_usado = valor - saldo
         limite -= limite_usado
         saldo = 0
         LIMITE_SAQUES -= 1
-        extrato += f"\nSaque:\tR${valor:.2f}"
+        extrato += f"\n{data_atual()} - Saque: R${valor:.2f}"
         print(f"\nSaque realizado com sucesso.\nFoi retirado R${limite_usado:.2f} do seu limite.")
     else:
         print("\n*Saldo e limite insuficientes.*")
@@ -140,7 +148,7 @@ def efetuar_saque(*, valor, saldo, limite, extrato, LIMITE_SAQUES):
     return saldo, extrato, limite, LIMITE_SAQUES
 
 def mostrar_extrato(saldo, limite, LIMITE_SAQUES, LIMITE_TRANSACOES, *, extrato):
-    print("\n========== Extrato ==========")
+    print("\n============ Extrato ============")
 
     print(f"\nLimite disponível:\tR${limite:.2f}")
 
@@ -160,10 +168,16 @@ def mostrar_extrato(saldo, limite, LIMITE_SAQUES, LIMITE_TRANSACOES, *, extrato)
     
     print("\nNenhuma transação realizada." if not extrato else extrato)
     print(f"\nSaldo:\tR${saldo:.2f}")
-    print("\n============================")
+    print("\n=================================")
 
 def sair():
     print('\nObrigado por utilizar o nosso sistema!\n')
+
+def resetar_limites_diarios(LIMITE_SAQUES, LIMITE_TRANSACOES, data_ultima_transacao):
+    obter_data_atual = data_atual()
+    if obter_data_atual != data_ultima_transacao:
+        return 3, 5, obter_data_atual
+    return LIMITE_SAQUES, LIMITE_TRANSACOES, data_ultima_transacao
 
 def main():
     AGENCIA = '0001'
@@ -174,8 +188,12 @@ def main():
     extrato = ""
     clientes = []
     contas = []
+    data_ultima_transacao = data_atual()
+
 
     while True:
+        LIMITE_SAQUES, LIMITE_TRANSACOES, data_ultima_transacao = resetar_limites_diarios(LIMITE_SAQUES, LIMITE_TRANSACOES, data_ultima_transacao)
+
         escolha = opcoes()
 
         if escolha == ADICIONAR_CLIENTE:
