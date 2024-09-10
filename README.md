@@ -15,6 +15,9 @@ O objetivo deste projeto é desenvolver uma simulação de conta bancária muito
 - Listar contas.
 - Filtrar clientes.
 -------------------------------------------------------
+[Issues](https://github.com/daniel-neves-dev/dio_python_bank/issues?q=is%3Aissue+is%3Aclosed) -
+[Pull requests](https://github.com/daniel-neves-dev/dio_python_bank/pulls?q=is%3Apr+is%3Aclosed)
+------------------------------------------------------
 
 First challenge code of the bootcamp NTT DATA Data Base Python Engineering.
 
