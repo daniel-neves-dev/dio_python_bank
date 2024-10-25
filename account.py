@@ -55,8 +55,10 @@ def cadastrar_cliente(lista_clientes):
         return
 
     cliente_nome = input('Digite o nome do cliente: ')
+    data_nascimento = input("Informe a data de nascimento (dd/mm/aaaa): ")
+    endereco = input("Informe o endereço (logradouro, número - bairro - cidade/sigla estado): ")
     print(f'Cliente {cliente_nome} cadastrado com sucesso!')
-    lista_clientes.append({'nome': cliente_nome.title(), 'cpf':cpf_cliente})
+    lista_clientes.append({'nome': cliente_nome.title(), 'cpf':cpf_cliente, 'data_nascimento': data_nascimento, 'endereco':endereco})
 
 def exibir_lista_clientes(lista_clientes, contas):
     print()
@@ -70,7 +72,7 @@ def exibir_lista_clientes(lista_clientes, contas):
 
     for cliente in clientes_ordenados:
         print(50 * '-')
-        print(f"Nome: {cliente['nome']} - CPF:{cliente['cpf']}")
+        print(f"Nome: {cliente['nome']} - CPF:{cliente['cpf']} - Data Nascimento: {cliente['data_nascimento']}")
         verificar_contas_cliente(cliente, contas)
 
 def procurar_cliente(lista_clientes, contas):
@@ -88,7 +90,8 @@ def procurar_cliente(lista_clientes, contas):
         return
 
     for cliente in cliente_cadastrado:
-        print(f"Nome: {cliente['nome']}")
+        print(f"Nome: {cliente['nome']} - CPF:{cliente['cpf']} "
+              f"- Data Nascimento: {cliente['data_nascimento']}\nEndereço: {cliente['endereco']}")
         verificar_contas_cliente(cliente, contas)
 
 def deletar_cliente(lista_clientes, contas):
