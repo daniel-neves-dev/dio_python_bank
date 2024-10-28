@@ -1,7 +1,5 @@
 from datetime import datetime
-from logging import exception
-from time import process_time_ns
-
+import abc
 import pytz
 
 opcoes = {
@@ -28,37 +26,204 @@ def exibir_opcoes():
 def data_atual():
     return datetime.now(pytz.timezone("America/Sao_Paulo")).strftime("%d/%m/%Y - %H:%M:%S")
 
-def verificar_cpf(lista_clientes, cpf_cliente):
-    clientes_cadastrado = [cliente for cliente in lista_clientes if cliente['cpf'] == cpf_cliente]
-    return clientes_cadastrado
-
 def verificar_contas_cliente(cliente, contas):
-    contas_cliente = [conta for conta in contas if conta['cliente']['cpf'] == cliente['cpf']]
+    contas_cliente = [conta for conta in contas if conta.cliente.cpf == cliente.cpf]
     if contas_cliente:
         for conta in contas_cliente:
-            print(f"Agência: {conta['AGENCIA']} - Número da conta: {conta['numero_conta']}")
+            print(f"Agência: {conta.agencia} - Número da conta: {conta.numero_conta} - Saldo: {conta.saldo}")
     else:
-        print(f"{cliente['nome']}, não possui nenhuma conta cadastrada")
+        print(f"{cliente.nome}, não possui nenhuma conta cadastrada")
+
+class Cliente:
+    def __init__(self, endereco):
+        self.endereco = endereco
+        self.contas = []
+
+    def realizar_transacao(self, conta, transacao):
+        transacao.registrar(conta)
+
+    def cadastrar_conta_corrente(self, conta):
+        self.contas.append(conta)
+
+class PessoaFisica(Cliente):
+    def __init__(self, nome, cpf, data_nascimento, endereco):
+        super().__init__(endereco)
+        self.nome = nome
+        self.cpf = cpf
+        self.data_nascimento = data_nascimento
+
+class Conta:
+    def __init__(self, numero_conta, cliente, agencia="0001", saldo=0.0):
+        self._saldo = saldo
+        self._numero_conta = numero_conta
+        self._agencia = agencia
+        self._cliente = cliente
+        self._historico = Historico()
+
+    @classmethod
+    def cadastrar_conta(cls, numero_conta, cliente):
+        return cls(numero_conta, cliente)
+
+    @property
+    def saldo(self):
+        return self._saldo
+
+    @property
+    def numero_conta(self):
+        return self._numero_conta
+
+    @property
+    def agencia(self):
+        return self._agencia
+
+    @property
+    def cliente(self):
+        return self._cliente
+
+    @property
+    def historico(self):
+        return self._historico
+
+class ContaCorrente(Conta):
+    def __init__(self, numero_conta, cliente, agencia="0001", saldo=0.0, limite=500.0, qtd_limite_saques=3, qtd_transacoes=5, data_ultima_transacao=None):
+        super().__init__(numero_conta, cliente, agencia, saldo)
+        self.limite = limite
+        self.qtd_limite_saques = qtd_limite_saques
+        self.qtd_transacoes = qtd_transacoes
+
+        if data_ultima_transacao is None:
+            self.data_ultima_transacao = data_atual().split(" ")[0]
+        else:
+            self.data_ultima_transacao = data_ultima_transacao
+
+        self.qtd_limite_saques, self.qtd_transacoes, self.data_ultima_transacao = resetar_limites_diarios(
+            self.data_ultima_transacao,
+            self.qtd_limite_saques,
+            self.qtd_transacoes
+        )
+
+    def depositar(self, valor):
+        if self.qtd_transacoes <= 0:
+            print('Você atingiu a quantidade limite de transações diárias.')
+            return False
+
+        if valor <= 0:
+            print('Valor negativo ou zero, não é possível efetuar depósito.')
+            return False
+        else:
+            self._saldo += valor
+            self.qtd_transacoes -= 1
+            print(f"\nValor de R${valor:.2f}, foi creditado na sua conta.")
+            print(f"Quantidade de transações restantes hoje: {self.qtd_transacoes}")
+            return True
+
+    def sacar(self, valor):
+
+        if self.qtd_limite_saques <= 0:
+            print('Você atingiu a quantidade limite de saques diários.')
+            return False
+
+        if self.qtd_transacoes <= 0:
+            print('Você atingiu a quantidade limite de transações diárias.')
+            return False
+
+        if valor <= 0:
+            print('Valor negativo ou zero, não é possível efetuar saque.')
+            return False
+        elif valor > self._saldo:
+            print('Você não tem saldo suficiente.')
+            return False
+        elif valor > self.limite:
+            print('Você não pode sacar acima de R$500.')
+            return False
+        else:
+            self._saldo -= valor
+            self.qtd_limite_saques -= 1
+            self.qtd_transacoes -= 1
+            print(f"\nValor de R$ {valor} foi debitado da sua conta.")
+            print(f"Quantidade de saques restantes hoje: {self.qtd_limite_saques}")
+            print(f"Quantidade de transações restantes hoje: {self.qtd_transacoes}")
+            return True
+
+class Transacao(abc.ABC):
+    @property
+    @abc.abstractmethod
+    def valor(self):
+        pass
+
+    @abc.abstractmethod
+    def registrar(self, conta):
+        pass
+
+class Historico:
+    def __init__(self):
+        self._transacoes = []
+
+    def adicionar_transacao(self, transacao):
+        self._transacoes.append(
+            {
+                'tipo': transacao.__class__.__name__,
+                'valor': transacao.valor,
+                'data': data_atual()
+            }
+        )
+
+class Deposito(Transacao):
+    def __init__(self, valor):
+        self._valor = valor
+
+    @property
+    def valor(self):
+        return self._valor
+
+    def registrar(self, conta):
+        sucesso_transacao = conta.depositar(self.valor)
+
+        if sucesso_transacao:
+            conta.historico.adicionar_transacao(self)
+
+class Saque(Transacao):
+    def __init__(self, valor):
+        self._valor = valor
+
+    @property
+    def valor(self):
+        return self._valor
+
+    def registrar(self, conta):
+        sucesso_transacao = conta.sacar(self.valor)
+
+        if sucesso_transacao:
+            conta.historico.adicionar_transacao(self)
+
+def verificar_cpf(lista_clientes, cpf_cliente):
+    clientes_cadastrado = [cliente for cliente in lista_clientes if cliente.cpf == cpf_cliente]
+    return clientes_cadastrado
 
 def cadastrar_cliente(lista_clientes):
     print()
     print(10 * '=', 'Cadastro de Clientes', 10 * '=')
 
-    cpf_cliente = input('Digite o CPF (somente números): ')
-    if not cpf_cliente.isdigit():
-        print('Digite números inteiros.')
-        return
+    while True:
+        try:
+            cpf_cliente = int(input('Digite o CPF (somente números): ').strip())
 
-    cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
-    if cliente_cadastrado:
-        print('Cliente já cadastro!')
-        return
+            cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
+            if cliente_cadastrado:
+                print('Cliente já cadastrado!')
+                return
+        except ValueError:
+            print('\nDigite somente números inteiros.')
+            continue
 
-    cliente_nome = input('Digite o nome do cliente: ')
-    data_nascimento = input("Informe a data de nascimento (dd/mm/aaaa): ")
-    endereco = input("Informe o endereço (logradouro, número - bairro - cidade/sigla estado): ")
-    print(f'Cliente {cliente_nome} cadastrado com sucesso!')
-    lista_clientes.append({'nome': cliente_nome.title(), 'cpf':cpf_cliente, 'data_nascimento': data_nascimento, 'endereco':endereco})
+        cliente_nome = input('Digite o nome do cliente: ').title()
+        data_nascimento = input("Informe a data de nascimento (dd/mm/aaaa): ")
+        endereco = input("Informe o endereço (logradouro, número - bairro - cidade/sigla estado): ")
+
+        cliente = PessoaFisica(nome=cliente_nome, cpf=cpf_cliente, data_nascimento=data_nascimento,endereco=endereco )
+        print(f'\nCliente {cliente_nome} cadastrado com sucesso!')
+        lista_clientes.append(cliente)
+        return
 
 def exibir_lista_clientes(lista_clientes, contas):
     print()
@@ -68,172 +233,268 @@ def exibir_lista_clientes(lista_clientes, contas):
         print('Nenhum cliente cadastrado.')
         return
 
-    clientes_ordenados = sorted(lista_clientes, key= lambda item:item['nome'])
+    clientes_ordenados = sorted(lista_clientes, key= lambda item:item.nome)
 
     for cliente in clientes_ordenados:
         print(50 * '-')
-        print(f"Nome: {cliente['nome']} - CPF:{cliente['cpf']} - Data Nascimento: {cliente['data_nascimento']}")
+        print(f"Nome: {cliente.nome} - CPF:{cliente.cpf} - Data Nascimento: {cliente.data_nascimento}")
         verificar_contas_cliente(cliente, contas)
 
 def procurar_cliente(lista_clientes, contas):
     print()
     print(10 * '=', 'Procurar Cliente', 10 * '=')
 
-    cpf_cliente = input('Digite o CPF (somente números): ')
-    if not cpf_cliente.isdigit():
-        print('Digite números inteiros.')
-        return
+    while True:
+        try:
+            cpf_cliente = int(input('Digite o CPF (somente números): ').strip())
 
-    cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
-    if not cliente_cadastrado:
-        print('Cliente não encontrado!')
-        return
+            cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
+            if not cliente_cadastrado:
+                print('Cliente não cadastrado!')
+                return
+        except ValueError:
+            print('\nDigite somente números inteiros.')
+            continue
 
-    for cliente in cliente_cadastrado:
-        print(f"Nome: {cliente['nome']} - CPF:{cliente['cpf']} "
-              f"- Data Nascimento: {cliente['data_nascimento']}\nEndereço: {cliente['endereco']}")
-        verificar_contas_cliente(cliente, contas)
+        for cliente in cliente_cadastrado:
+            print(f"Nome: {cliente.nome} - CPF:{cliente.cpf} "
+                  f"- Data Nascimento: {cliente.data_nascimento}\nEndereço: {cliente.endereco}")
+            verificar_contas_cliente(cliente, contas)
+            return
 
 def deletar_cliente(lista_clientes, contas):
     print()
     print(10 * '=', 'Deletar Cliente', 10 * '=')
 
-    cpf_cliente = input('Digite o CPF (somente números): ')
-    if not cpf_cliente.isdigit():
-        print('Digite números inteiros.')
-        return
+    while True:
+        try:
+            cpf_cliente = int(input('Digite o CPF (somente números): ').strip())
 
-    cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
-    if not cliente_cadastrado:
-        print('Cliente não encontrado!')
-        return
+            cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
+            if not cliente_cadastrado:
+                print('Cliente não cadastrado!')
+                return
+        except ValueError:
+            print('\nDigite somente números inteiros.')
+            continue
 
-    for cliente in cliente_cadastrado:
-        print(f"Nome: {cliente['nome']}")
-        verificar_contas_cliente(cliente, contas)
+        for cliente in cliente_cadastrado:
+            print(f"Nome: {cliente.nome} - CPF: {cliente.cpf}")
+            verificar_contas_cliente(cliente, contas)
 
-        excluir_cliente = input('Deletar cliente do sistema? [S/N]').lower()
-        if excluir_cliente == 's':
-            for conta in contas:
-                contas.remove(conta)
-            lista_clientes.remove(cliente)
-            print('Cliente deletado com sucesso.')
+            excluir_cliente = input('Deletar cliente do sistema? [S/N]').lower()
+            if excluir_cliente == 's':
+                for conta in cliente.contas[:]:
+                    contas.remove(conta)
+                lista_clientes.remove(cliente)
+                print('Cliente deletado com sucesso.')
+                return
 
 def gerar_numero_conta(contas):
     if not contas:
         return 1
-    return max(conta['numero_conta'] for conta in contas)+1
+    return max(conta.numero_conta for conta in contas)+1
 
-def cadastrar_conta_corrente(lista_clientes, AGENCIA, contas):
+def cadastrar_conta_corrente(lista_clientes, contas):
     print()
     print(10 * '=', 'Cadastrar Conta Corrente', 10 * '=')
 
-    cpf_cliente = input('Digite o CPF (somente números): ')
-    if not cpf_cliente.isdigit():
-        print('Digite números inteiros.')
-        return
+    while True:
+        try:
+            cpf_cliente = int(input('Digite o CPF (somente números): ').strip())
 
-    cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
-    if not cliente_cadastrado:
-        print('Cliente não esta cadastrado no sistema!')
-        return contas
+            cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
+            if not cliente_cadastrado:
+                print('Cliente não cadastrado!')
+                return
+        except ValueError:
+            print('\nDigite somente números inteiros.')
+            continue
 
-    for cliente in cliente_cadastrado:
-        nova_conta = input(f"Deseja cadastrar uma nova conta para {cliente['nome']}? [S/N]").lower()
-        if nova_conta == 's':
-            numero_conta = gerar_numero_conta(contas)
-            nova_conta = ({'cliente': cliente, 'numero_conta':numero_conta, 'AGENCIA': AGENCIA})
-            print(f"\nConta cadastrada com sucesso: {cliente['nome']} - Número da conta: {numero_conta}")
-            contas.append(nova_conta)
+        cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
+        if not cliente_cadastrado:
+            print('Cliente não esta cadastrado no sistema!')
             return contas
+
+        for cliente in cliente_cadastrado:
+            nova_conta = input(f"Deseja cadastrar uma nova conta para {cliente.nome}? [S/N]").lower()
+            if nova_conta == 's':
+                numero_conta = gerar_numero_conta(contas)
+                conta = ContaCorrente(numero_conta=numero_conta, cliente=cliente)
+                print(f"\nConta cadastrada com sucesso para: {cliente.nome} - Número da conta: {numero_conta}")
+                cliente.contas.append(conta)
+                contas.append(conta)
+                return contas
 
 def exibir_lista_contas(contas):
     print()
     print(10 * '=', 'Lista Conta Corrente', 10 * '=')
 
-    contas_ordenadas = sorted(contas, key=lambda item:item['numero_conta'])
+    contas_ordenadas = sorted(contas, key=lambda item:item.numero_conta)
     for e, conta in enumerate(contas_ordenadas):
         print(50* '-')
-        print(f"Número da conta:{conta['numero_conta']} - "
-              f"Agência: {conta['AGENCIA']} - "
-              f"Cliente: {conta['cliente']['nome']} - CPF:{conta['cliente']['cpf']}")
+        print(f"Número da conta:{conta.numero_conta} - "
+              f"Agência: {conta.agencia} - "
+              f"Cliente: {conta.cliente.nome} - CPF:{conta.cliente.cpf}")
 
 def excluir_conta(contas, lista_clientes):
     print()
     print(10 * '=', 'Excluir Conta Corrente', 10 * '=')
 
-    cpf_cliente = input('Digite o CPF (somente números): ')
-    if not cpf_cliente.isdigit():
-        print('Digite números inteiros.')
-        return
+    while True:
+        try:
+            cpf_cliente = int(input('Digite o CPF (somente números): ').strip())
 
-    cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
-    if not cliente_cadastrado:
-        print('Cliente não encontrado!')
-        return
+            cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
+            if not cliente_cadastrado:
+                print('Cliente não cadastrado!')
+                return
+        except ValueError:
+            print('\nDigite somente números inteiros.')
+            continue
 
-    for cliente in cliente_cadastrado:
-        print(f"Nome: {cliente['nome']}, CPF: {cliente['cpf']}")
-        verificar_contas_cliente(cliente, contas)
+        cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
+        if not cliente_cadastrado:
+            print('Cliente não encontrado!')
+            return
 
-        excluir_numero_conta = int(input(f"Digite o número da conta: "))
-        for conta in contas:
-            if conta['numero_conta'] == excluir_numero_conta:
-                excluir_conta = input('Deseja encerrar esta conta corrente? [S/N]: ').lower()
-                if excluir_conta == 's':
-                    contas.remove(conta)
-                    print('Conta deletada com sucesso.')
-                else:
-                    print('Operação cancelada.')
-                    return
+        for cliente in cliente_cadastrado:
+            print(f"Nome: {cliente.nome}, CPF: {cliente.cpf}")
+            verificar_contas_cliente(cliente, contas)
 
-def depositar(saldo, extrato, LIMITE_TRANSACOES):
+        while True:
+            try:
+                excluir_numero_conta = int(input("Digite o número da conta que deseja excluir: "))
+            except ValueError:
+                print('Número da conta inválido. Por favor, insira um número válido.')
+                continue
+
+            conta_a_excluir = next((conta for conta in cliente.contas if conta.numero_conta == excluir_numero_conta),
+                                   None)
+
+            if not conta_a_excluir:
+                print(f'Conta número {excluir_numero_conta} não encontrada no sistema.')
+                continue
+
+            confirmar = input(
+                f'Deseja realmente excluir a conta número {excluir_numero_conta}? [S/N]: ').lower().strip()
+            if confirmar == 's':
+                try:
+                    contas.remove(conta_a_excluir)
+                    cliente.contas.remove(conta_a_excluir)
+                    print(f'Conta excluída com sucesso.')
+                except ValueError:
+                    print('Conta não encontrada.')
+                return
+            elif confirmar == 'n':
+                print('Operação cancelada.')
+                return
+            else:
+                print('Resposta inválida. Por favor, responda com "S" ou "N".')
+
+def efetuar_deposito(lista_clientes, contas):
     print()
     print(10* '=', 'Efetuar Deposito', 10*'=')
 
-    while True:
-        try:
-            depositar_valor = float(input('Digite o valor de deposito: R$ '))
+    try:
+        cpf_cliente = int(input('Digite o CPF (somente números): ').strip())
 
-            if depositar_valor <= 0:
-                print('Valor negativo ou zero, não é possível efetuar depósito.')
-                continue
-            saldo += depositar_valor
-            LIMITE_TRANSACOES -= 1
-            extrato.append(f"{data_atual()} - Crédito: R${depositar_valor}")
-            print(f"\nValor de R${depositar_valor:.2f}, foi creditado na sua conta.\n")
-            return saldo, extrato, LIMITE_TRANSACOES
-        except ValueError:
-            print('Digite somete números')
+        cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
+        if not cliente_cadastrado:
+            print('Cliente não cadastrado!')
+            return
 
-def efetuar_saque(*, valor, saldo, limite_saque_diario, numero_saques_efetuados, extrato):
+        cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
+        if not cliente_cadastrado:
+            print('Cliente não esta cadastrado no sistema!')
+            return
 
-    if valor <= 0:
-        print('Valor negativo ou zero, não é possível efetuar depósito.')
-        return
-    elif valor > saldo:
-        print('Você não tem saldo suficiente.')
-        return saldo, numero_saques_efetuados, extrato
-    elif valor > limite_saque_diario:
-        print('Você não pode sacar acima de R$500.')
-        return saldo, numero_saques_efetuados, extrato
-    else:
-        saldo -= valor
-        numero_saques_efetuados += 1
-        extrato.append(f'{data_atual()} - Débito: R${valor}')
-        print(f"\nValor de R${valor:.2f}, foi debitado da sua conta.\n")
-        return saldo, numero_saques_efetuados, extrato
+        for cliente in cliente_cadastrado:
+            verificar_contas_cliente(cliente, contas)
+            for conta in cliente.contas:
+                numero_conta = int(input('\nDigite o número da conta: '))
+                conta_selecionada = next((conta for conta in cliente.contas if conta.numero_conta == numero_conta), None)
+                if conta_selecionada is None:
+                    print('Conta não encontrada')
+                    continue
+                valor = float(input('Digite o valor de deposito: R$ '))
+                deposito = Deposito(valor)
+                deposito.registrar(conta_selecionada)
+                return
+    except ValueError:
+        print('\nDigite somente números inteiros.')
 
-def exibir_extrato(saldo, LIMITE_TRANSACOES, *, extrato):
+def efetuar_saque(*, lista_clientes, contas):
+    print()
+    print(10 * '=', 'Efetuar Saque', 10 * '=')
+
+    try:
+        cpf_cliente = int(input('Digite o CPF (somente números): ').strip())
+
+        cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
+        if not cliente_cadastrado:
+            print('Cliente não cadastrado!')
+            return
+
+        cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
+        if not cliente_cadastrado:
+            print('Cliente não esta cadastrado no sistema!')
+            return
+
+        for cliente in cliente_cadastrado:
+            verificar_contas_cliente(cliente, contas)
+            for conta in cliente.contas:
+                numero_conta = int(input('\nDigite o número da conta: '))
+                conta_selecionada = next((conta for conta in cliente.contas if conta.numero_conta == numero_conta), None)
+                if conta_selecionada is None:
+                    print('Conta não encontrada')
+                    continue
+                valor = float(input('Digite o valor para efetuar o saque: R$ '))
+                saque = Saque(valor)
+                saque.registrar(conta_selecionada)
+                return
+    except ValueError:
+        print('\nDigite somente números inteiros.')
+
+def exibir_extrato(lista_clientes):
     print()
     print(10 * '=', 'Extrato', 10 * '=')
-    if not extrato:
-        print('Não foram realizadas transações.')
-    else:
-        for e in extrato:
-            print(f"\n{e}")
-    print(f'\nSaldo total: R${saldo}')
-    print(f"Quantidade de transações restantes: {LIMITE_TRANSACOES}")
+
+    try:
+        cpf_cliente = int(input('Digite o CPF (somente números): ').strip())
+
+        cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
+        if not cliente_cadastrado:
+            print('Cliente não cadastrado!')
+            return
+    except ValueError:
+        print('\nDigite somente números inteiros.')
+
+    cliente_cadastrado = verificar_cpf(lista_clientes, cpf_cliente)
+    if not cliente_cadastrado:
+        print('Cliente não esta cadastrado no sistema!')
+        return
+
+    for cliente in cliente_cadastrado:
+        if not cliente.contas:
+            print(f"{cliente.nome} não possui contas para exibir extrato.")
+            continue
+        for conta in cliente.contas:
+            print(f"Número da conta: {conta.numero_conta} - Saldo: R${conta.saldo:.2f}")
+
+        numero_conta = int(input('\nDigite o número da conta: '))
+        conta_selecionada = next((conta for conta in cliente.contas if conta.numero_conta == numero_conta), None)
+        if not conta_selecionada:
+            print('Conta não encontrada')
+            continue
+        transacao = conta_selecionada.historico._transacoes
+        extrato = ''
+        if not transacao:
+            extrato += 'Não foi realizada nenhuma transação.'
+        else:
+            for t in transacao:
+                extrato += f"\nData: {t['data']}\n{t['tipo']}\nValor R$: {t['valor']}\n{20 * '-'}"
+        print(extrato)
 
 def resetar_limites_diarios(LIMITE_SAQUES, LIMITE_TRANSACOES, data_ultima_transacao):
     obter_data_atual = data_atual().split(" ")[0]
@@ -242,25 +503,27 @@ def resetar_limites_diarios(LIMITE_SAQUES, LIMITE_TRANSACOES, data_ultima_transa
     return LIMITE_SAQUES, LIMITE_TRANSACOES, data_ultima_transacao
 
 def main():
-    LIMITE_SAQUES = 3
-    AGENCIA = '0001'
-    LIMITE_TRANSACOES = 5
-    saldo = 0.0
-    limite_saque_diario = 500.0
-    numero_saques_efetuados = 0
-    extrato = []
+    data_ultima_transacao = data_atual()
     lista_clientes = []
     contas = []
-    data_ultima_transacao = data_atual()
 
     while True:
         print()
         print(10 * '=', 'NTT DATA Sistema Bancário', 10 * '=')
         print(data_atual())
         print()
-        LIMITE_SAQUES, LIMITE_TRANSACOES, data_ultima_transacao = resetar_limites_diarios(LIMITE_SAQUES,
-                                                                                          LIMITE_TRANSACOES,
-                                                                                          data_ultima_transacao)
+
+        nova_data = data_atual().split(" ")[0]
+        if nova_data != data_ultima_transacao:
+            for conta in contas:
+                if isinstance(conta, ContaCorrente):
+                    conta.qtd_limite_saques, conta.qtd_transacoes, conta.data_ultima_transacao = resetar_limites_diarios(
+                        conta.data_ultima_transacao,
+                        conta.qtd_limite_saques,
+                        conta.qtd_transacoes
+                    )
+            data_ultima_transacao = nova_data
+
         try:
             escolha = exibir_opcoes()
 
@@ -277,7 +540,7 @@ def main():
                 deletar_cliente(lista_clientes, contas)
 
             elif escolha == opcoes['cadastrar_conta_corrente']:
-                contas = cadastrar_conta_corrente(lista_clientes, AGENCIA, contas)
+                contas = cadastrar_conta_corrente(lista_clientes, contas)
 
             elif escolha == opcoes['exibir_lista_de_contas']:
                 exibir_lista_contas(contas)
@@ -286,28 +549,13 @@ def main():
                 excluir_conta(contas, lista_clientes)
 
             elif escolha == opcoes['efetuar_deposito']:
-                if LIMITE_TRANSACOES <= 0:
-                    print('Limite de transações da conta atingidos.')
-                    continue
-                else:
-                    saldo, extrato, LIMITE_TRANSACOES = depositar(saldo, extrato, LIMITE_TRANSACOES)
+                efetuar_deposito(lista_clientes, contas)
 
             elif escolha == opcoes['efetuar_saque']:
-                if numero_saques_efetuados >= LIMITE_SAQUES:
-                    print('Você atingiu o limite de saques diários.')
-                    continue
-                else:
-                    print(10 * '=', 'Efetuar Saque', 10 * '=')
-                    valor = float(input('Digite o valor a ser retirado da conta: R$ '))
-                    saldo, numero_saques_efetuados, extrato = efetuar_saque(valor=valor, saldo=saldo,
-                                                                            limite_saque_diario=limite_saque_diario,
-                                                                            numero_saques_efetuados=numero_saques_efetuados,
-                                                                            extrato=extrato)
-                    if valor <= saldo and valor <= limite_saque_diario:
-                        LIMITE_TRANSACOES -= 1
+                efetuar_saque(lista_clientes=lista_clientes, contas=contas)
 
             elif escolha == opcoes['extrato']:
-                exibir_extrato(saldo, LIMITE_TRANSACOES, extrato=extrato)
+                exibir_extrato(lista_clientes)
 
             elif escolha == opcoes['sair']:
                 print('Obrigado por usar nosso sistema!!!')
