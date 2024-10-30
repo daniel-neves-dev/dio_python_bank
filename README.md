@@ -1,21 +1,5 @@
 # Bank Account Simulation - Python Challenge 🏦
 
-First challenge code of the bootcamp NTT DATA Data Base Python Engineering.
-
-## Objective
-
-The goal of this project is to develop a very simple Python-based bank account simulation that performs basic financial operations like deposits, withdrawals, and balance checks.
-
-## Features
-
-- Deposit money into the account.
-- Withdraw money from the account.
-- Check current balance.
-- Error handling for insufficient funds.
-
-## Technologies Used
-# Bank Account Simulation - Python Challenge 🏦
-
 ## Objetivo
 
 Este projeto foi desenvolvido como parte do Bootcamp NTT DATA Engenharia de Dados com Python, oferecido pela Digital Innovation One (DIO). O objetivo deste projeto é desenvolver uma simulação de conta bancária muito simples baseada em Python, que realize operações financeiras básicas, como depósitos, saques e consultas de saldo.
