@@ -73,7 +73,7 @@ class ContaCorrente(Conta):
         self.qtd_transacoes = qtd_transacoes
 
         if data_ultima_transacao is None:
-            self.data_ultima_transacao = data_atual().split(" ")[0]
+            self.data_ultima_transacao = data_atual()
         else:
             self.data_ultima_transacao = data_ultima_transacao
 
@@ -100,31 +100,31 @@ class ContaCorrente(Conta):
 
     def sacar(self, valor):
 
-        if self.qtd_limite_saques <= 0:
-            print('\n   Você atingiu a quantidade limite de saques diários.')
-            return False
+            if self.qtd_limite_saques <= 0:
+                print('\n   Você atingiu a quantidade limite de saques diários.')
+                return False
 
-        if self.qtd_transacoes <= 0:
-            print('\n   Você atingiu a quantidade limite de transações diárias.')
-            return False
+            if self.qtd_transacoes <= 0:
+                print('\n   Você atingiu a quantidade limite de transações diárias.')
+                return False
 
-        if valor <= 0:
-            print('\n   Valor negativo ou zero, não é possível efetuar saque.')
-            return False
-        elif valor > self._saldo:
-            print('\n   Você não tem saldo suficiente.')
-            return False
-        elif valor > self.limite:
-            print('\n   Você não pode sacar acima de R$500.')
-            return False
-        else:
-            self._saldo -= valor
-            self.qtd_limite_saques -= 1
-            self.qtd_transacoes -= 1
-            print(f"\n   Valor de R$ {valor} foi debitado da sua conta.")
-            print(f"   Quantidade de saques restantes : {self.qtd_limite_saques}")
-            print(f"   Quantidade de transações restantes : {self.qtd_transacoes}")
-            return True
+            if valor <= 0:
+                print('\n   Valor negativo ou zero, não é possível efetuar saque.')
+                return False
+            elif valor > self._saldo:
+                print('\n   Você não tem saldo suficiente.')
+                return False
+            elif valor > self.limite:
+                print('\n   Você não pode sacar acima de R$500.')
+                return False
+            else:
+                self._saldo -= valor
+                self.qtd_limite_saques -= 1
+                self.qtd_transacoes -= 1
+                print(f"\n   Valor de R$ {valor} foi debitado da sua conta.")
+                print(f"   Quantidade de saques restantes : {self.qtd_limite_saques}")
+                print(f"   Quantidade de transações restantes : {self.qtd_transacoes}")
+                return True
 
 class Transacao(abc.ABC):
     @property
@@ -349,7 +349,7 @@ def excluir_conta(contas, lista_clientes):
 
     while True:
         cpf_cliente = input('\n   Digite o CPF (somente números): ').strip()
-        validar_cpf(cpf_cliente)
+
         if not validar_cpf(cpf_cliente):
             print('\n   Digite 11 números inteiros para cpf.')
             continue
@@ -385,8 +385,25 @@ def excluir_conta(contas, lista_clientes):
                 else:
                     break
 
-        while True:
+        if conta_selecionada.saldo > 0:
+            print(f'\n   Sua conta possui R$ {conta_selecionada.saldo}')
+            sacar = input('\n   Deseja realizar o saque agora? [S/N]: ').lower()
+            while True:
+                if sacar == 's':
+                    valor = float(input('\n   Digite o valor para efetuar o saque: R$ '))
+                    saque = Saque(valor)
+                    saque.registrar(conta_selecionada)
 
+                    if conta_selecionada.saldo != 0:
+                        print('\n   O valor total da conta deve ser sacado, procure o gerente se necessário.')
+                        continue
+                    else:
+                        break
+                else:
+                    print('\n   Não é possível excluir conta com saldo positivo')
+                    return
+
+        while True:
             confirmar = input(
                 f'\n   Deseja realmente excluir a conta número {conta_selecionada.numero_conta}? [S/N]: ').lower().strip()
             if confirmar == 's':
@@ -541,11 +558,11 @@ def exibir_extrato(lista_clientes):
             print(extrato)
             return
 
-def resetar_limites_diarios(LIMITE_SAQUES, LIMITE_TRANSACOES, data_ultima_transacao):
-    obter_data_atual = data_atual().split(" ")[0]
+def resetar_limites_diarios(data_ultima_transacao, qtd_limite_saques, qtd_transacoes):
+    obter_data_atual = data_atual()
     if obter_data_atual != data_ultima_transacao:
         return 3, 5, obter_data_atual
-    return LIMITE_SAQUES, LIMITE_TRANSACOES, data_ultima_transacao
+    return data_ultima_transacao, qtd_limite_saques, qtd_transacoes
 
 def main():
     data_ultima_transacao = data_atual()
@@ -558,7 +575,7 @@ def main():
         print(f"   {data_atual()}")
         print()
 
-        nova_data = data_atual().split(" ")[0]
+        nova_data = data_atual()
         if nova_data != data_ultima_transacao:
             for conta in contas:
                 if isinstance(conta, ContaCorrente):
@@ -613,11 +630,11 @@ def main():
                 exibir_extrato(lista_clientes)
 
             elif escolha == opcoes['sair']:
-                print('   Obrigado por usar nosso sistema!!!')
+                print('\n   Obrigado por usar nosso sistema!!!')
                 break
             else:
-                print('   Digite uma opção válida.')
+                print('\n   Digite uma opção válida.')
         except ValueError:
-            print('   Digite um número das opções.')
+            print('\n   Digite um número das opções.')
 
 main()
