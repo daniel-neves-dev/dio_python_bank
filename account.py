@@ -73,7 +73,7 @@ class ContaCorrente(Conta):
         self.qtd_transacoes = qtd_transacoes
 
         if data_ultima_transacao is None:
-            self.data_ultima_transacao = data_atual()
+            self.data_ultima_transacao = data_atual().split(' ')[0]
         else:
             self.data_ultima_transacao = data_ultima_transacao
 
@@ -224,7 +224,15 @@ def cadastrar_cliente(lista_clientes):
             return
 
         cliente_nome = input('\n   Digite o nome do cliente: ').title()
-        data_nascimento = input("\n   Informe a data de nascimento (dd/mm/aaaa): ")
+        while True:
+            try:
+                data_nascimento_str = input("\n   Informe a data de nascimento (dd/mm/aaaa): ")
+                data_nascimento = datetime.strptime(data_nascimento_str, '%d/%m/%Y')
+                break
+            except ValueError:
+                print('   Digite a data no formato (dd/mm/aaaa)')
+                continue
+
         endereco = input("\n   Informe o endereço (logradouro, número - bairro - cidade/sigla estado): ")
 
         cliente = PessoaFisica(nome=cliente_nome, cpf=cpf_cliente, data_nascimento=data_nascimento,endereco=endereco )
@@ -438,6 +446,7 @@ def efetuar_deposito(lista_clientes, contas):
             return
 
         for cliente in cliente_cadastrado:
+            print(f"\n   Nome: {cliente.nome} - CPF: {cliente.cpf}")
             verificar_contas_cliente(cliente, contas)
             if not cliente.contas:
                 print(f"   {cliente.nome} não possui conta cadastrada.")
@@ -487,6 +496,7 @@ def efetuar_saque(*, lista_clientes, contas):
             return
 
         for cliente in cliente_cadastrado:
+            print(f"\n   Nome: {cliente.nome} - CPF: {cliente.cpf}")
             verificar_contas_cliente(cliente, contas)
             if not cliente.contas:
                 print(f"   {cliente.nome} não possui conta cadastrada.")
@@ -537,6 +547,7 @@ def exibir_extrato(lista_clientes):
             return
 
         for cliente in cliente_cadastrado:
+            print(f"\n   Nome: {cliente.nome} - CPF: {cliente.cpf}")
             if not cliente.contas:
                 print(f"\n   {cliente.nome} não possui contas para exibir extrato.")
                 return
@@ -559,13 +570,13 @@ def exibir_extrato(lista_clientes):
             return
 
 def resetar_limites_diarios(data_ultima_transacao, qtd_limite_saques, qtd_transacoes):
-    obter_data_atual = data_atual()
+    obter_data_atual = data_atual().split(' ')[0]
     if obter_data_atual != data_ultima_transacao:
         return 3, 5, obter_data_atual
-    return data_ultima_transacao, qtd_limite_saques, qtd_transacoes
+    return qtd_limite_saques, qtd_transacoes, data_ultima_transacao
 
 def main():
-    data_ultima_transacao = data_atual()
+    data_ultima_transacao = data_atual().split(' ')[0]
     lista_clientes = []
     contas = []
 
@@ -575,7 +586,7 @@ def main():
         print(f"   {data_atual()}")
         print()
 
-        nova_data = data_atual()
+        nova_data = data_atual().split(' ')[0]
         if nova_data != data_ultima_transacao:
             for conta in contas:
                 if isinstance(conta, ContaCorrente):
